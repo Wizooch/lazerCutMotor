@@ -1,7 +1,14 @@
-# This is a simple Python code example
+#!/usr/bin/env python3
 
-def greet(name):
-  """This function greets the person passed in as a parameter."""
-  print("Hello, " + name + "!")
+import tkinter as tk
 
-greet("World")
+# Create the main window
+root = tk.Tk()
+root.title("Hello World")
+
+# Create and pack a label with "Hello World!"
+label = tk.Label(root, text="Hello World!")
+label.pack(padx=20, pady=20)
+
+# Run the main event loop
+root.mainloop()
