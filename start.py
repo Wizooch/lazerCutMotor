@@ -1,7 +1,14 @@
 #!/usr/bin/env python3
 
-print("Hello from rc.local! This script has run.")
+import tkinter as tk
 
-# Write to a file so we can verify it ran
-with open("/home/lasercut/rc_local_test.log", "w") as file:
-    file.write("rc.local script ran successfully!\n")
+# Create the main window
+root = tk.Tk()
+root.title("Hello World")
+
+# Create and pack a label with "Hello World!"
+label = tk.Label(root, text="Hello World!")
+label.pack(padx=20, pady=20)
+
+# Run the main event loop
+root.mainloop()
