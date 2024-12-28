@@ -15,7 +15,7 @@ for p in ports:
 #    On Windows, it might be "COM3"
 #    On Raspberry Pi/Linux, try "/dev/ttyACM0" or "/dev/ttyUSB0"
 # ----------------------------------------------------------
-TARGET_PORT = "COM3"          # Example for Windows
+TARGET_PORT = "/dev/ttyUSB0"       # Example for Windows
 # TARGET_PORT = "/dev/ttyACM0"  # Example for Raspberry Pi
 
 BAUD_RATE = 115200
