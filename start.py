@@ -1,3 +1,5 @@
+print("DEBUG: Script is loading...")
+
 import serial
 import serial.tools.list_ports
 import time
