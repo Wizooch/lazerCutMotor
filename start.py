@@ -6,8 +6,9 @@ import time
 
 BAUD_RATE = 115200
 
-# Updated G-code lines to match your .nc file exactly
 GCODE_COMMANDS = [
+    "G90",             # Ensure absolute mode
+    "G21",             # Ensure mm
     "M3 S0",
     "S0 ",
     "G0X6.004Y0.533",
@@ -26,48 +27,41 @@ GCODE_COMMANDS = [
 ]
 
 def find_laser_port():
-    """
-    Scan through all serial ports and return the first one
-    that looks like a USB or ACM port (typical on Raspberry Pi for laser cutters/3D printers).
-    Returns None if none are found or opened successfully.
-    """
+    """ Find the first /dev/ttyUSB* or /dev/ttyACM* port. """
     ports = serial.tools.list_ports.comports()
-    candidates = []
-
-    # Gather candidate ports (common on Raspberry Pi for USB/ACM devices)
     for p in ports:
-        # Typical Pi device names: /dev/ttyUSB0, /dev/ttyACM0
         if 'ttyUSB' in p.device or 'ttyACM' in p.device:
-            candidates.append(p.device)
-
-    # Try each candidate in turn
-    for port_name in candidates:
-        print(f"Trying port: {port_name}")
-        try:
-            ser = serial.Serial(port_name, BAUD_RATE, timeout=1)
-            ser.close()
-            print(f"Success opening {port_name} at {BAUD_RATE} baud.")
-            return port_name
-        except Exception as e:
-            print(f"Failed to open {port_name}: {e}")
-
+            return p.device
     return None
 
 def send_gcode(port_name):
-    """
-    Send GCODE_COMMANDS to the specified port_name.
-    """
+    """ Send GCODE_COMMANDS to the specified port_name. """
     try:
         ser = serial.Serial(port_name, BAUD_RATE, timeout=1)
-        time.sleep(2)  # wait for controller to initialize
+        
+        # Give controller time to reset
+        ser.reset_input_buffer()
+        ser.reset_output_buffer()
+        time.sleep(3)  
+        
+        print(f"Connected to {port_name} at {BAUD_RATE}. Sending G-code...")
 
-        print(f"\nConnected to {port_name}. Sending G-code...")
+        # Optionally send homing or coordinate reset
+        # ser.write(b"$H\n")
+        # wait for homing response, or just sleep a bit
+        # time.sleep(3)
         
         for cmd in GCODE_COMMANDS:
-            full_cmd = cmd + "\n"
-            ser.write(full_cmd.encode('utf-8'))
-            response = ser.readline().decode('utf-8').strip()
+            line = cmd.strip() + "\n"
+            ser.write(line.encode('utf-8'))
+            ser.flush()
+            
+            # Wait for controller's response (like 'ok' or error message)
+            response = ser.readline().decode('utf-8', errors='ignore').strip()
             print(f"Sent: {cmd} | Received: {response}")
+            
+            # short delay so we don't overwhelm the controller
+            time.sleep(0.1)
         
         ser.close()
         print("Done sending G-code. Port closed.\n")
