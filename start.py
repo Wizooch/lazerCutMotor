@@ -2,28 +2,10 @@ import serial
 import serial.tools.list_ports
 import time
 
-# -----------------------------
-# 1) Enumerate all serial ports
-# -----------------------------
-print("Available serial ports:")
-ports = serial.tools.list_ports.comports()
-for p in ports:
-    print(f"  {p.device} - {p.description}")
-
-# ----------------------------------------------------------
-# 2) Set the target port name and desired baud rate
-#    On Windows, it might be "COM3"
-#    On Raspberry Pi/Linux, try "/dev/ttyACM0" or "/dev/ttyUSB0"
-# ----------------------------------------------------------
-TARGET_PORT = "/dev/ttyUSB0"       # Example for Windows
-# TARGET_PORT = "/dev/ttyACM0"  # Example for Raspberry Pi
-
 BAUD_RATE = 115200
 
-# ---------------------
-# 3) Your G-code lines
-# ---------------------
-gcode_commands = [
+# Your G-code commands
+GCODE_COMMANDS = [
     "M3 S0",
     "S0",
     "G0X6.004Y0.533",
@@ -41,40 +23,68 @@ gcode_commands = [
     "M5 S0"
 ]
 
-def main():
-    print(f"\nAttempting to connect to {TARGET_PORT} at {BAUD_RATE} baud...")
+def find_laser_port():
+    """
+    Scan through all serial ports and return the first one
+    that looks like a USB or ACM port (typical on Raspberry Pi for laser cutters/3D printers).
+    Returns None if none are found or opened successfully.
+    """
+    ports = serial.tools.list_ports.comports()
+    candidates = []
 
+    # Gather candidate ports (common on Raspberry Pi for USB/ACM devices)
+    for p in ports:
+        # Typical Pi device names: /dev/ttyUSB0, /dev/ttyACM0
+        # We'll pick anything that *contains* 'ttyUSB' or 'ttyACM' in the device name.
+        if 'ttyUSB' in p.device or 'ttyACM' in p.device:
+            candidates.append(p.device)
+
+    # Try each candidate in turn
+    for port_name in candidates:
+        print(f"Trying port: {port_name}")
+        try:
+            ser = serial.Serial(port_name, BAUD_RATE, timeout=1)
+            # If we got here, it means we opened it successfully.
+            ser.close()
+            print(f"Success opening {port_name} at {BAUD_RATE} baud.")
+            return port_name  # Return the first successful port
+        except Exception as e:
+            print(f"Failed to open {port_name}: {e}")
+
+    # If we exhaust all candidates without success, return None
+    return None
+
+def send_gcode(port_name):
+    """
+    Send GCODE_COMMANDS to the specified port_name.
+    """
     try:
-        # ----------------------------------
-        # Open the serial port
-        # ----------------------------------
-        ser = serial.Serial(TARGET_PORT, BAUD_RATE, timeout=1)
-
-        # Give the laser controller time to initialize
-        time.sleep(2)
-
-        print(f"Connected to {TARGET_PORT}.\nSending G-code...")
-
-        # ----------------------------------
-        # Send each G-code line
-        # ----------------------------------
-        for cmd in gcode_commands:
+        # Open serial port
+        ser = serial.Serial(port_name, BAUD_RATE, timeout=1)
+        time.sleep(2)  # wait for controller to initialize
+        
+        print(f"\nConnected to {port_name}. Sending G-code...")
+        
+        for cmd in GCODE_COMMANDS:
             full_cmd = cmd + "\n"
             ser.write(full_cmd.encode('utf-8'))
-            # Read any response; some controllers echo or respond with 'ok', etc.
             response = ser.readline().decode('utf-8').strip()
-            print(f"Sent: {cmd}, Received: {response}")
-
-        # ----------------------------------
-        # Close the port
-        # ----------------------------------
+            print(f"Sent: {cmd} | Received: {response}")
+        
         ser.close()
-        print("\nDone sending G-code. Port closed.")
-
+        print("Done sending G-code. Port closed.\n")
     except serial.SerialException as e:
-        print(f"Error opening port {TARGET_PORT}: {e}")
+        print(f"Could not open serial port {port_name}: {e}")
     except Exception as e:
         print(f"Unexpected error: {e}")
+
+def main():
+    print("Searching for laser cutter serial port...")
+    port = find_laser_port()
+    if port:
+        send_gcode(port)
+    else:
+        print("No suitable laser port found. Please check connections.")
 
 if __name__ == "__main__":
     main()
