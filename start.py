@@ -4,6 +4,7 @@ import serial
 import serial.tools.list_ports
 import time
 
+
 BAUD_RATE = 115200
 
 # Your G-code commands
