@@ -1,18 +1,17 @@
-print("DEBUG: Script is loading...")
+#!/usr/bin/env python3
 
 import serial
 import serial.tools.list_ports
 import time
 
-
 BAUD_RATE = 115200
 
-# Your G-code commands
+# Updated G-code lines to match your .nc file exactly
 GCODE_COMMANDS = [
     "M3 S0",
-    "S0",
+    "S0 ",
     "G0X6.004Y0.533",
-    "S1000",
+    "S1000 ",
     "G1X95.596F800",
     "G3X100.965Y5.902I0J5.369",
     "G1Y146.293",
@@ -22,7 +21,7 @@ GCODE_COMMANDS = [
     "G1Y5.902",
     "G3X6.004Y0.533I5.369J0",
     "G1",
-    "S0",
+    "S0 ",
     "M5 S0"
 ]
 
@@ -38,7 +37,6 @@ def find_laser_port():
     # Gather candidate ports (common on Raspberry Pi for USB/ACM devices)
     for p in ports:
         # Typical Pi device names: /dev/ttyUSB0, /dev/ttyACM0
-        # We'll pick anything that *contains* 'ttyUSB' or 'ttyACM' in the device name.
         if 'ttyUSB' in p.device or 'ttyACM' in p.device:
             candidates.append(p.device)
 
@@ -47,14 +45,12 @@ def find_laser_port():
         print(f"Trying port: {port_name}")
         try:
             ser = serial.Serial(port_name, BAUD_RATE, timeout=1)
-            # If we got here, it means we opened it successfully.
             ser.close()
             print(f"Success opening {port_name} at {BAUD_RATE} baud.")
-            return port_name  # Return the first successful port
+            return port_name
         except Exception as e:
             print(f"Failed to open {port_name}: {e}")
 
-    # If we exhaust all candidates without success, return None
     return None
 
 def send_gcode(port_name):
@@ -62,10 +58,9 @@ def send_gcode(port_name):
     Send GCODE_COMMANDS to the specified port_name.
     """
     try:
-        # Open serial port
         ser = serial.Serial(port_name, BAUD_RATE, timeout=1)
         time.sleep(2)  # wait for controller to initialize
-        
+
         print(f"\nConnected to {port_name}. Sending G-code...")
         
         for cmd in GCODE_COMMANDS:
