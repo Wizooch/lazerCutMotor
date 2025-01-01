@@ -1,82 +1,30 @@
-#!/usr/bin/env python3
-
-import serial
-import serial.tools.list_ports
+import RPi.GPIO as GPIO
 import time
 
-BAUD_RATE = 115200
+# GPIO setup
+STEP_PIN = 18
+DIR_PIN = 23
+ENABLE_PIN = 24
 
-GCODE_COMMANDS = [
-    "G90",             # Ensure absolute mode
-    "G21",             # Ensure mm
-    "M3 S0",
-    "S0 ",
-    "G0X6.004Y0.533",
-    "S1000 ",
-    "G1X95.596F800",
-    "G3X100.965Y5.902I0J5.369",
-    "G1Y146.293",
-    "G3X95.596Y151.663I-5.369J0",
-    "G1X6.004",
-    "G3X0.635Y146.293I0J-5.369",
-    "G1Y5.902",
-    "G3X6.004Y0.533I5.369J0",
-    "G1",
-    "S0 ",
-    "M5 S0"
-]
+GPIO.setmode(GPIO.BCM)
+GPIO.setup(STEP_PIN, GPIO.OUT)
+GPIO.setup(DIR_PIN, GPIO.OUT)
+GPIO.setup(ENABLE_PIN, GPIO.OUT)
 
-def find_laser_port():
-    """ Find the first /dev/ttyUSB* or /dev/ttyACM* port. """
-    ports = serial.tools.list_ports.comports()
-    for p in ports:
-        if 'ttyUSB' in p.device or 'ttyACM' in p.device:
-            return p.device
-    return None
+# Enable driver
+GPIO.output(ENABLE_PIN, GPIO.LOW)
 
-def send_gcode(port_name):
-    """ Send GCODE_COMMANDS to the specified port_name. """
-    try:
-        ser = serial.Serial(port_name, BAUD_RATE, timeout=1)
-        
-        # Give controller time to reset
-        ser.reset_input_buffer()
-        ser.reset_output_buffer()
-        time.sleep(3)  
-        
-        print(f"Connected to {port_name} at {BAUD_RATE}. Sending G-code...")
+# Set direction
+GPIO.output(DIR_PIN, GPIO.HIGH)  # High = CW, Low = CCW
 
-        # Optionally send homing or coordinate reset
-        # ser.write(b"$H\n")
-        # wait for homing response, or just sleep a bit
-        # time.sleep(3)
-        
-        for cmd in GCODE_COMMANDS:
-            line = cmd.strip() + "\n"
-            ser.write(line.encode('utf-8'))
-            ser.flush()
-            
-            # Wait for controller's response (like 'ok' or error message)
-            response = ser.readline().decode('utf-8', errors='ignore').strip()
-            print(f"Sent: {cmd} | Received: {response}")
-            
-            # short delay so we don't overwhelm the controller
-            time.sleep(0.1)
-        
-        ser.close()
-        print("Done sending G-code. Port closed.\n")
-    except serial.SerialException as e:
-        print(f"Could not open serial port {port_name}: {e}")
-    except Exception as e:
-        print(f"Unexpected error: {e}")
+# Step motor
+for _ in range(200):  # 200 steps for one revolution (assuming 1.8° per step)
+    GPIO.output(STEP_PIN, GPIO.HIGH)
+    time.sleep(0.001)  # Step delay (adjust for speed)
+    GPIO.output(STEP_PIN, GPIO.LOW)
+    time.sleep(0.001)
 
-def main():
-    print("Searching for laser cutter serial port...")
-    port = find_laser_port()
-    if port:
-        send_gcode(port)
-    else:
-        print("No suitable laser port found. Please check connections.")
+# Disable driver
+GPIO.output(ENABLE_PIN, GPIO.HIGH)
 
-if __name__ == "__main__":
-    main()
+GPIO.cleanup()
