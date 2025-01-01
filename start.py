@@ -24,7 +24,7 @@ for _ in range(200):  # 200 steps for one revolution (assuming 1.8° per step)
     GPIO.output(STEP_PIN, GPIO.LOW)
     time.sleep(0.001)
 
-# Disable driver
-GPIO.output(ENABLE_PIN, GPIO.HIGH)
+# ENABLE driver
+GPIO.output(ENABLE_PIN, GPIO.LOW)
 
 GPIO.cleanup()
