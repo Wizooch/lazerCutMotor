@@ -26,7 +26,7 @@ GPIO.output(ENABLE_PIN, GPIO.LOW)
 print("DEBUG: ENABLE_PIN set to LOW (driver enabled).")
 
 # 2) Set direction pin
-GPIO.output(DIR_PIN, GPIO.HIGH)  # High = CW (depending on driver orientation)
+GPIO.output(DIR_PIN, GPIO.LOW)  # High = CW (depending on driver orientation)
 print("DEBUG: DIR_PIN set to HIGH (clockwise direction).")
 
 # Step delay (adjust speed by changing this value)
