@@ -5,26 +5,30 @@ import time
 # GPIO pin assignment for the piezo transducer.
 TRANS_PIN = 19
 
-# PWM parameters
-FREQUENCY = 2000      # 2 kHz tone, audible and typical for piezo buzzers
-DUTY_CYCLE = 50       # 50% duty cycle for a square wave
-
 # Setup GPIO
 GPIO.setwarnings(False)
 GPIO.setmode(GPIO.BCM)
 GPIO.setup(TRANS_PIN, GPIO.OUT)
 
-print("Generating a 2 kHz tone on GPIO", TRANS_PIN)
+print("Starting frequency sweep from 20 Hz to 20 kHz on GPIO", TRANS_PIN)
 
-# Initialize and start PWM on the transducer pin
-pwm = GPIO.PWM(TRANS_PIN, FREQUENCY)
-pwm.start(DUTY_CYCLE)
+# Initialize PWM with starting frequency of 20 Hz.
+pwm = GPIO.PWM(TRANS_PIN, 20)
+pwm.start(50)  # 50% duty cycle for a square wave
 
 try:
     while True:
-        time.sleep(1)
+        # Sweep upward from 20 Hz to 20 kHz
+        for freq in range(20, 20001, 20):
+            pwm.ChangeFrequency(freq)
+            time.sleep(0.005)  # Adjust the delay to control sweep speed
+        # Sweep downward from 20 kHz back to 20 Hz
+        for freq in range(20000, 19, -20):
+            pwm.ChangeFrequency(freq)
+            time.sleep(0.005)
 except KeyboardInterrupt:
-    print("\nStopping tone and cleaning up GPIO...")
+    print("\nFrequency sweep interrupted by user.")
 finally:
     pwm.stop()
     GPIO.cleanup()
+    print("Cleaned up GPIO. Exiting.")
